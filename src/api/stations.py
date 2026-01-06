@@ -1,14 +1,17 @@
 """Radio station API endpoints."""
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
+
 from cloudsound_shared.db.pool import get_db
+from cloudsound_shared.logging import get_logger
+from cloudsound_shared.exceptions import NotFoundError
+
 from ..services.station_service import RadioStationService
 from ..services.track_service import TrackService
 from ..models import RadioStation, StationType
-from cloudsound_shared.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -17,17 +20,16 @@ router = APIRouter(prefix="/radio/stations", tags=["radio"])
 
 class StationResponse(BaseModel):
     """Radio station response model."""
-    id: UUID
-    name: str
-    type: str
-    genre: Optional[str] = None
-    description: Optional[str] = None
-    is_active: bool
-    created_at: str
-    updated_at: str
+    model_config = ConfigDict(from_attributes=True)
     
-    class Config:
-        from_attributes = True
+    id: UUID
+    name: str = Field(..., description="Station name")
+    type: str = Field(..., description="Station type (upcoming, past, genre)")
+    genre: Optional[str] = Field(None, description="Genre for genre-based stations")
+    description: Optional[str] = Field(None, description="Station description")
+    is_active: bool = Field(..., description="Whether the station is active")
+    created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
     
     @classmethod
     def model_validate(cls, obj, **kwargs):
@@ -48,17 +50,16 @@ class StationResponse(BaseModel):
 
 class TrackResponse(BaseModel):
     """Track response model."""
-    id: UUID
-    title: str
-    artist_id: UUID
-    artist_name: Optional[str] = None
-    duration_seconds: int
-    file_path: str
-    file_size: int
-    file_format: str
+    model_config = ConfigDict(from_attributes=True)
     
-    class Config:
-        from_attributes = True
+    id: UUID
+    title: str = Field(..., description="Track title")
+    artist_id: UUID = Field(..., description="Artist ID")
+    artist_name: Optional[str] = Field(None, description="Artist name")
+    duration_seconds: int = Field(..., ge=0, description="Track duration in seconds")
+    file_path: str = Field(..., description="Storage path to audio file")
+    file_size: int = Field(..., ge=0, description="File size in bytes")
+    file_format: str = Field(..., description="Audio format (mp3, flac, etc.)")
 
 
 @router.get("", response_model=List[StationResponse])
@@ -102,9 +103,9 @@ async def get_station(
     
     if not station:
         logger.warning("station_not_found", station_id=str(station_id))
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Station {station_id} not found"
+        raise NotFoundError(
+            message=f"Station {station_id} not found",
+            details={"station_id": str(station_id)},
         )
     
     logger.info("station_retrieved", station_id=str(station_id), station_name=station.name)
@@ -126,9 +127,9 @@ async def get_station_tracks(
     station = await station_service.get_station_by_id(station_id)
     if not station:
         logger.warning("station_not_found_for_tracks", station_id=str(station_id))
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Station {station_id} not found"
+        raise NotFoundError(
+            message=f"Station {station_id} not found",
+            details={"station_id": str(station_id)},
         )
     
     # Get tracks for station
