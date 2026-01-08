@@ -133,7 +133,7 @@ async def stream_station(
             )
         else:
             # Return full file
-            file_data = await storage_client.get_file(track.file_path)
+            file_data = storage_client.get_file(track.file_path)
             
             headers = {
                 "Content-Length": str(track.file_size),
@@ -238,7 +238,7 @@ async def stream_track(
             )
         else:
             # Return full file
-            file_data = await storage_client.get_file(track.file_path)
+            file_data = storage_client.get_file(track.file_path)
             
             headers = {
                 "Content-Length": str(track.file_size),
