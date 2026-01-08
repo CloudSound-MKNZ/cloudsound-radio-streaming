@@ -5,7 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
-from cloudsound_shared.db.pool import get_db
+from cloudsound_shared.multitenancy import get_tenant_db
 from cloudsound_shared.logging import get_logger
 from cloudsound_shared.exceptions import NotFoundError
 
@@ -67,7 +67,7 @@ async def list_stations(
     active_only: bool = Query(True, description="Filter by active status"),
     station_type: Optional[StationType] = Query(None, description="Filter by station type"),
     genre: Optional[str] = Query(None, description="Filter by genre (for genre stations)"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_tenant_db)
 ) -> List[StationResponse]:
     """List all radio stations."""
     logger.info(
@@ -93,7 +93,7 @@ async def list_stations(
 @router.get("/{station_id}", response_model=StationResponse)
 async def get_station(
     station_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_tenant_db)
 ) -> StationResponse:
     """Get a radio station by ID."""
     logger.info("getting_station", station_id=str(station_id))
@@ -115,7 +115,7 @@ async def get_station(
 @router.get("/{station_id}/tracks", response_model=List[TrackResponse])
 async def get_station_tracks(
     station_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_tenant_db)
 ) -> List[TrackResponse]:
     """Get all tracks for a radio station."""
     logger.info("getting_station_tracks", station_id=str(station_id))

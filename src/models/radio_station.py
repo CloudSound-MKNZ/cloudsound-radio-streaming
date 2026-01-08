@@ -1,8 +1,9 @@
 """RadioStation model for radio streaming service."""
-from sqlalchemy import Column, String, Boolean, Enum as SQLEnum
+from sqlalchemy import Column, String, Boolean, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 import enum
 from cloudsound_shared.models.base import Base, UUIDMixin, TimestampMixin
+from cloudsound_shared.multitenancy import TenantMixin
 
 
 class StationType(str, enum.Enum):
@@ -12,21 +13,26 @@ class StationType(str, enum.Enum):
     GENRE = "genre"  # Music organized by genre
 
 
-class RadioStation(Base, UUIDMixin, TimestampMixin):
-    """RadioStation model representing a radio station."""
+class RadioStation(Base, UUIDMixin, TimestampMixin, TenantMixin):
+    """RadioStation model representing a radio station with tenant isolation."""
     
     __tablename__ = "radio_stations"
     
-    name = Column(String(255), nullable=False, unique=True, index=True)
+    name = Column(String(255), nullable=False, index=True)  # Unique per tenant, not globally
     type = Column(SQLEnum(StationType), nullable=False, index=True)
     genre = Column(String(100), nullable=True, index=True)  # Only used when type is GENRE
     description = Column(String(1000), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
+    
+    # Unique station name within tenant
+    __table_args__ = (
+        UniqueConstraint('tenant_id', 'name', name='uq_radio_stations_tenant_name'),
+    )
     
     # Relationships
     station_tracks = relationship("StationTrack", back_populates="station", cascade="all, delete-orphan", order_by="StationTrack.order")
     # Note: PlaybackEvent is in analytics service, not radio-streaming
     
     def __repr__(self) -> str:
-        return f"<RadioStation(id={self.id}, name='{self.name}', type='{self.type}')>"
+        return f"<RadioStation(id={self.id}, name='{self.name}', type='{self.type}', tenant_id={self.tenant_id})>"
 

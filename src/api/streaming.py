@@ -4,7 +4,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
-from cloudsound_shared.db.pool import get_db
+from cloudsound_shared.multitenancy import get_tenant_db
 from ..services.station_service import RadioStationService
 from ..services.track_service import TrackService
 from cloudsound_shared.storage import StorageClient
@@ -27,7 +27,7 @@ router = APIRouter(prefix="/radio/stream", tags=["radio"])
 async def stream_station(
     station_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_tenant_db)
 ) -> Response:
     """
     Stream audio from a radio station.
@@ -174,7 +174,7 @@ async def stream_station(
 async def stream_track(
     track_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_tenant_db)
 ) -> Response:
     """
     Stream a specific track by ID.

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from pydantic import BaseModel
 from uuid import UUID
-from cloudsound_shared.db.pool import get_db
+from cloudsound_shared.multitenancy import get_tenant_db
 from ..services.search_service import SearchService
 from ..models import Artist, Track
 from cloudsound_shared.logging import get_logger
@@ -56,7 +56,7 @@ class SearchResponse(BaseModel):
 async def search(
     q: str = Query(..., description="Search query string", min_length=1, max_length=255),
     limit: int = Query(50, description="Maximum results per type (artists and tracks)", ge=1, le=100),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_tenant_db)
 ) -> SearchResponse:
     """
     Search for artists and tracks by name/title.
