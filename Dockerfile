@@ -5,14 +5,14 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
-    postgresql-client \
     git \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Install shared package from git
 RUN pip install --no-cache-dir git+https://github.com/CloudSound-MKNZ/cloudsound-shared.git@main
 
-# Copy service requirements
+# Copy requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
